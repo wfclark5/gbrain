@@ -228,6 +228,12 @@ export function dimsProviderOptions(
       if (modelId === 'embo-01') {
         return { openaiCompatible: { type: 'db' } };
       }
+      // Gemini embedding models via LiteLLM/openai-compatible proxy —
+      // LiteLLM maps `dimensions` → Vertex `output_dimensionality`.
+      // Same Matryoshka capability as native-google path above (line 139).
+      if (modelId.startsWith('gemini-embedding')) {
+        return { openaiCompatible: { dimensions: dims } };
+      }
       return undefined;
   }
 }
