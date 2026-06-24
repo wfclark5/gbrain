@@ -103,6 +103,26 @@ describe('runScaffoldThirdParty — happy path', () => {
     expect(existsSync(join(workspace, 'skills/sample-skill/SKILL.md'))).toBe(true);
   });
 
+  test('writes third-party skill/shared-dep files under skills/<subdir> when targetSkillsSubdir is set', async () => {
+    freshSandbox();
+    buildPackFixture(packDir);
+    const resolved = resolveSource(packDir);
+
+    const result = await runScaffoldThirdParty(
+      {
+        resolved,
+        targetWorkspace: workspace,
+        targetSkillsSubdir: 'gbrain',
+        statePath,
+      },
+      '0.36.0',
+    );
+
+    expect(result.status).toBe('wrote_new');
+    expect(existsSync(join(workspace, 'skills/gbrain/sample-skill/SKILL.md'))).toBe(true);
+    expect(existsSync(join(workspace, 'skills/sample-skill/SKILL.md'))).toBe(false);
+  });
+
   test('records the pack in state.json after a successful scaffold', async () => {
     freshSandbox();
     buildPackFixture(packDir);

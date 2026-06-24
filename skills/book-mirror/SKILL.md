@@ -323,10 +323,10 @@ where the book's framing breaks down for this specific reader.
 
 ## Related skills
 
-- `skills/brain-pdf/SKILL.md` — render the personalized page to PDF.
-- `skills/strategic-reading/SKILL.md` — read a book through a specific
+- `skills/gbrain/brain-pdf/SKILL.md` — render the personalized page to PDF.
+- `skills/gbrain/strategic-reading/SKILL.md` — read a book through a specific
   problem-lens instead of personalizing to the whole reader.
-- `skills/article-enrichment/SKILL.md` — same shape applied to articles
+- `skills/gbrain/article-enrichment/SKILL.md` — same shape applied to articles
   rather than books.
 
 

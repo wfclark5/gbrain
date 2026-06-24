@@ -123,6 +123,23 @@ describe('runScaffold — happy path', () => {
     expect(result.summary.pairedSourcesWritten).toBe(1);
   });
 
+  it('writes skill/shared-dep files under skills/<subdir> when targetSkillsSubdir is set, while paired sources remain workspace-rooted', () => {
+    const { gbrainRoot } = scratchGbrain({ withPairedSource: true });
+    const ws = scratchWorkspace();
+
+    runScaffold({
+      gbrainRoot,
+      targetWorkspace: ws,
+      skillSlug: 'book-mirror',
+      targetSkillsSubdir: 'gbrain',
+    });
+
+    expect(existsSync(join(ws, 'skills', 'gbrain', 'book-mirror', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(ws, 'skills', 'gbrain', 'conventions', 'quality.md'))).toBe(true);
+    expect(existsSync(join(ws, 'src', 'commands', 'book-mirror.ts'))).toBe(true);
+    expect(existsSync(join(ws, 'skills', 'book-mirror', 'SKILL.md'))).toBe(false);
+  });
+
   it('--all (skillSlug: null) installs every bundled skill', () => {
     const { gbrainRoot } = scratchGbrain();
     const ws = scratchWorkspace();

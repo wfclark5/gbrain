@@ -245,7 +245,7 @@ async function cmdList(args: string[]): Promise<void> {
 async function cmdScaffold(args: string[]): Promise<void> {
   if (args.includes('--help') || args.includes('-h')) {
     console.log(
-      'gbrain skillpack scaffold <name> | <source> | --all [--workspace PATH] [--dry-run] [--trust] [--no-cache] [--json]\n\n' +
+      'gbrain skillpack scaffold <name> | <source> | --all [--workspace PATH] [--target-subdir PATH] [--dry-run] [--trust] [--no-cache] [--json]\n\n' +
       '<name>   — bundled skill slug (e.g. `book-mirror`)\n' +
       '<source> — third-party skillpack source. Accepted shapes:\n' +
       '             owner/repo                (expands to https://github.com/owner/repo)\n' +
@@ -254,6 +254,7 @@ async function cmdScaffold(args: string[]): Promise<void> {
       '             ./local/pack.tgz          (local tarball)\n' +
       '\nFlags:\n' +
       '  --workspace PATH    Target workspace (default: auto-detected)\n' +
+      '  --target-subdir P   Install skill/shared-dep files under skills/<P>/ (paired sources stay workspace-rooted)\n' +
       '  --all               Scaffold every bundled skill (gbrain only)\n' +
       '  --dry-run           Validate + report; no writes\n' +
       '  --trust             Skip first-install confirm prompt (CI / unattended agents)\n' +
@@ -269,6 +270,7 @@ async function cmdScaffold(args: string[]): Promise<void> {
   const noCache = args.includes('--no-cache');
   let name: string | null = null;
   let workspace: string | null = null;
+  let targetSubdir: string | null = null;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--workspace') {
@@ -276,12 +278,22 @@ async function cmdScaffold(args: string[]): Promise<void> {
       i++;
     } else if (a?.startsWith('--workspace=')) {
       workspace = a.slice('--workspace='.length) || null;
+    } else if (a === '--target-subdir') {
+      targetSubdir = args[i + 1] ?? null;
+      i++;
+    } else if (a?.startsWith('--target-subdir=')) {
+      targetSubdir = a.slice('--target-subdir='.length) || null;
     } else if (a && !a.startsWith('--') && !name) {
       name = a;
     }
   }
   if (!all && !name) {
     console.error('Error: pass a skill name, third-party source, or --all.');
+    process.exit(2);
+  }
+
+  if (all && targetSubdir) {
+    console.error('Error: --target-subdir is not supported with --all.');
     process.exit(2);
   }
 
@@ -308,6 +320,7 @@ async function cmdScaffold(args: string[]): Promise<void> {
           await runThirdPartyScaffold({
             spec: name,
             targetWorkspace,
+            targetSubdir,
             dryRun,
             trustFlag,
             noCache,
@@ -323,6 +336,7 @@ async function cmdScaffold(args: string[]): Promise<void> {
     await runThirdPartyScaffold({
       spec: name!,
       targetWorkspace,
+      targetSubdir,
       dryRun,
       trustFlag,
       noCache,
@@ -336,6 +350,7 @@ async function cmdScaffold(args: string[]): Promise<void> {
     const result = runScaffold({
       gbrainRoot,
       targetWorkspace,
+      targetSkillsSubdir: targetSubdir,
       skillSlug: all ? null : name!,
       dryRun,
     });
@@ -371,6 +386,7 @@ async function cmdScaffold(args: string[]): Promise<void> {
 interface ThirdPartyScaffoldOptions {
   spec: string;
   targetWorkspace: string;
+  targetSubdir: string | null;
   dryRun: boolean;
   trustFlag: boolean;
   noCache: boolean;
@@ -416,6 +432,7 @@ async function runThirdPartyScaffold(opts: ThirdPartyScaffoldOptions): Promise<v
       {
         resolved,
         targetWorkspace: opts.targetWorkspace,
+        targetSkillsSubdir: opts.targetSubdir,
         trustFlag: opts.trustFlag,
         dryRun: opts.dryRun,
         tier: registryTier,

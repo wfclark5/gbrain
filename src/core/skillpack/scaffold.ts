@@ -31,6 +31,7 @@ import { copyArtifacts, walkSourceDir } from './copy.ts';
 import type { CopyItem } from './copy.ts';
 import { enumerateScaffoldEntries, loadBundleManifest } from './bundle.ts';
 import type { ScaffoldEntry } from './bundle.ts';
+import { normalizeTargetSubdir, remapSkillTarget, TargetSubdirError } from './target-subdir.ts';
 
 export interface ScaffoldOptions {
   /** Absolute path to gbrain repo root (source-of-truth bundle). */
@@ -41,6 +42,8 @@ export interface ScaffoldOptions {
   skillSlug: string | null;
   /** Dry-run: validate + report; no writes. */
   dryRun?: boolean;
+  /** Optional subdirectory under `skills/` for scaffolded skill/shared-dep files. */
+  targetSkillsSubdir?: string | null;
 }
 
 export type ScaffoldOutcome = 'wrote_new' | 'skipped_existing';
@@ -109,10 +112,20 @@ export function runScaffold(opts: ScaffoldOptions): ScaffoldResult {
     throw new ScaffoldError(e.message, 'bundle_error');
   }
 
+  let targetSubdir: string | null;
+  try {
+    targetSubdir = normalizeTargetSubdir(opts.targetSkillsSubdir ?? null);
+  } catch (err) {
+    if (err instanceof TargetSubdirError) {
+      throw new ScaffoldError(err.message, 'bundle_error');
+    }
+    throw err;
+  }
+
   // Map ScaffoldEntry → CopyItem (workspace-rooted target path).
   const items: CopyItem[] = entries.map(e => ({
     source: e.source,
-    target: join(opts.targetWorkspace, e.relWorkspaceTarget),
+    target: join(opts.targetWorkspace, remapSkillTarget(e.relWorkspaceTarget, targetSubdir)),
   }));
 
   // Shared copy primitive. Refuses to overwrite existing files; no

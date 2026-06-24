@@ -31,12 +31,15 @@ import {
 } from './state.ts';
 import { askTrust, type SkillpackTier, type TrustPromptDecision } from './trust-prompt.ts';
 import type { ResolvedSource } from './remote-source.ts';
+import { normalizeTargetSubdir, remapSkillTarget, TargetSubdirError } from './target-subdir.ts';
 
 export interface ScaffoldThirdPartyOptions {
   /** Result of resolveSource() (already cached/cloned/extracted). */
   resolved: ResolvedSource;
   /** Absolute path to the target workspace where files should land. */
   targetWorkspace: string;
+  /** Optional subdirectory under `skills/` for scaffolded skill/shared-dep files. */
+  targetSkillsSubdir?: string | null;
   /** Tier the registry assigned the pack at scaffold time (informational). */
   tier?: SkillpackTier;
   /** Skip the trust prompt (CI / agent use). */
@@ -164,9 +167,19 @@ export async function runScaffoldThirdParty(
   }
 
   // 6. Copy.
+  let targetSubdir: string | null;
+  try {
+    targetSubdir = normalizeTargetSubdir(opts.targetSkillsSubdir ?? null);
+  } catch (err) {
+    if (err instanceof TargetSubdirError) {
+      throw new ScaffoldThirdPartyError(err.message, 'scaffold_failed');
+    }
+    throw err;
+  }
+
   const items: CopyItem[] = entries.map((e) => ({
     source: e.source,
-    target: join(opts.targetWorkspace, e.relWorkspaceTarget),
+    target: join(opts.targetWorkspace, remapSkillTarget(e.relWorkspaceTarget, targetSubdir)),
   }));
   const copy = copyArtifacts(items, { dryRun: opts.dryRun ?? false });
 
