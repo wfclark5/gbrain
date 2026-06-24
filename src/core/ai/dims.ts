@@ -231,7 +231,8 @@ export function dimsProviderOptions(
       // Gemini embedding models via LiteLLM/openai-compatible proxy —
       // LiteLLM maps `dimensions` → Vertex `output_dimensionality`.
       // Same Matryoshka capability as native-google path above (line 139).
-      if (modelId.startsWith('gemini-embedding')) {
+      // Case-insensitive: litellm proxy aliases may use mixed case.
+      if (modelId.toLowerCase().startsWith('gemini-embedding')) {
         return { openaiCompatible: { dimensions: dims } };
       }
       return undefined;

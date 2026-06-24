@@ -450,6 +450,20 @@ function isCustomDimValidForProvider(
         `OpenAI ${modelId} accepts dimensions 1..${maxDim}, got ${requestedDims}.`,
     };
   }
+  // Gemini embedding models (gemini-embedding-001, gemini-embedding-2, etc.)
+  // are Matryoshka-aware: they accept output_dimensionality of 768, 1536, or 3072.
+  // Case-insensitive: litellm proxy aliases may use mixed case (e.g. Gemini-Embedding-2).
+  // Applies on both native-google and litellm (openai-compatible) paths.
+  if (modelId.toLowerCase().startsWith('gemini-embedding')) {
+    const GEMINI_VALID_DIMS = [768, 1536, 3072];
+    if (GEMINI_VALID_DIMS.includes(requestedDims)) return { valid: true, error: '' };
+    return {
+      valid: false,
+      error:
+        `Gemini embedding model "${modelId}" accepts dimensions ` +
+        `${GEMINI_VALID_DIMS.join(', ')}, got ${requestedDims}.`,
+    };
+  }
 
   // Tier 3: provider not known to support custom dims at all.
   return {

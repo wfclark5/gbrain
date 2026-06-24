@@ -827,3 +827,53 @@ Key routing rules:
 - Architecture review → invoke plan-eng-review
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
+
+## Retrieval budget for scoped fixes
+When the target repo and subtree are already known, stop broad discovery and use a hard retrieval budget.
+
+### Hard limits before first edit
+For a scoped code/config fix, do not exceed:
+- 1 workspace index read
+- 1 git status / branch check
+- 1 subtree file listing
+- 4 exact file reads
+- 2 scoped content searches
+
+If those limits are reached, either:
+1. make the edit, or
+2. state exactly what is still unknown and why another lookup is required.
+
+### Do not widen scope after narrowing
+Once the target subtree is known:
+- do not run repo-root content searches
+- do not search sibling subtrees unless the first target explicitly points there
+- do not read workflow/spec/docs files unless the implementation directly depends on them
+
+### Stop conditions are mandatory
+Stop retrieval immediately when you have:
+- the controlling implementation file
+- one concrete consumer/example
+- one relevant test or verification path
+
+That is enough to start editing.
+
+### Repeated-search ban
+Do not run another search if:
+- the last search returned zero useful matches, or
+- the last search failed due to regex/argument error
+
+Change strategy instead:
+- read the exact file
+- list the exact directory
+- patch and validate
+
+### Scoped fix default pattern
+For Helm/chart/config convention fixes, default to this sequence only:
+1. read the target template
+2. read the chart values/defaults
+3. read one project example
+4. read one relevant doc or test
+5. edit
+6. validate
+
+Anything beyond that requires a written reason in the response or tool note.
